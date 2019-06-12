@@ -1,12 +1,15 @@
 import os
 import logging
 from concurrent.futures import ThreadPoolExecutor
-
 import re
+
+import click
 from bs4 import BeautifulSoup
 import urllib.request
-import pysnooper
-import click
+
+
+log_format = "%(asctime)s - %(levelname)s - %(message)s"
+logging.basicConfig(level=logging.DEBUG, format=log_format)
 
 
 def downloads(url, folder, name, directory):
@@ -20,12 +23,12 @@ header = {
 }
 
 
-# @click.command()
-# @click.option('-u', '--target_url')
-# @click.option('-b', '--begin_num')
-# @click.option('-e', '--end_num')
-# @click.option('-d', '--directory')
-# @click.option('-f', '--folder')
+@click.command()
+@click.option('-u', '--target_url', default='http://wallpaperswide.com/')
+@click.option('-b', '--begin_num')
+@click.option('-e', '--end_num')
+@click.option('-d', '--directory', default='/Volumes/Samsung_T5/Files/Photo/')
+@click.option('-f', '--folder', default='WallPapers')
 def run(target_url, begin_num, end_num, directory, folder):
     executor = ThreadPoolExecutor(2)
     req = urllib.request.Request(url=target_url, headers=header)
@@ -34,7 +37,7 @@ def run(target_url, begin_num, end_num, directory, folder):
     soup = BeautifulSoup(html, 'lxml')
     page = int(soup.find('div', class_='pagination').find_all('a')[-2].string)
     for index, i in enumerate(range(int(begin_num), int(end_num)+1)):
-        print('page {} / {}'.format(index, len(range(int(begin_num), int(end_num)))))
+        logging.info('page {} / {}'.format(index, len(range(int(begin_num), int(end_num)))))
         # logging.info('page %s / %s', index, len(range(int(begin_num), int(end_num))))
         new_url = 'http://wallpaperswide.com/page/' + str(i)
         req_1 = urllib.request.Request(url=new_url, headers=header)
@@ -50,7 +53,7 @@ def run(target_url, begin_num, end_num, directory, folder):
 
 
 def secondary_url(directory, folder, index, index2, j, li_list):
-    print('page {}  Wallpaper {} / {}'.format(index, index2, len(li_list)))
+    logging.info('page {}  Wallpaper {} / {}'.format(index, index2, len(li_list)-1))
     tail = j.find('a')['href']
     pattern = r'/(.*)\.'
     name = re.match(pattern, tail).group()
@@ -69,5 +72,5 @@ def secondary_url(directory, folder, index, index2, j, li_list):
 
 
 if __name__ == '__main__':
-    run('http://wallpaperswide.com/', 8, 11, '/Volumes/Samsung_T5/Files/Photo/', 'WallPapers')
-    # run()
+    # run('http://wallpaperswide.com/', 8, 11, '/Volumes/Samsung_T5/Files/Photo/', 'WallPapers')
+    run()
