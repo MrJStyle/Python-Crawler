@@ -61,37 +61,51 @@ def download_current_page_pic(url):
 def download_pic(start_page, end_page):
     if start_page >= end_page:
         raise ValueError('start_page should lower than end_page')
+
+    page_list = []
+
     for page_num in tqdm.trange(start_page, end_page+1):
         current_page_list = get_current_page_list(page_num)
+        page_list += current_page_list
 
-        async def download(next_path):
-            url = os.path.join(home_url, next_path)
-            async with aiohttp.request("GET", url) as req:
-                r = await req.text()
-                s = get_xpath(r)
+    pic_url_dict = {}
+
+    async def get_link(url):
+        url = os.path.join(home_url, url)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as req:
+                pic_url = await req.text()
+                s = get_xpath(pic_url)
                 file_path = s.xpath("//a[@target='_self' and text()='1920x1080']/@href")
                 file_name = file_path[0].rsplit('/')[-1]
                 download_url = os.path.join(home_url + file_path[0])
-                print('Begin download_pic:{}'.format(file_name))
-                async with timeout(1000):
-                    async with aiohttp.request("GET", download_url) as req_pic:
-                        status = req_pic.status
-                        if status != 200:
-                            raise ConnectionError
-                        content = await req_pic.read()
-                        with open(download_path + '{}.jpg'.format(file_name), 'wb') as f:
-                            f.write(content)
-                            f.close()
-                        print('Finish download:{}'.format(file_name))
+                pic_url_dict[download_url] = file_name
 
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        tasks = [download(url) for url in current_page_list]
-        loop.run_until_complete(asyncio.wait(tasks))
+    loop1 = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop1)
+    tasks1 = [get_link(page) for page in page_list]
+    loop1.run_until_complete(asyncio.wait(tasks1))
 
-        # for next_path in current_page_list:
-        #     url = os.path.join(home_url, next_path)
-        #     download_current_page_pic(url)
+    print('finish make pic_url_dict')
+
+    async def download(download_url):
+        print('Begin download_pic:{}'.format(pic_url_dict.get(download_url)))
+        async with timeout(1000):
+            async with aiohttp.ClientSession() as session2:
+                async with session2.get(download_url) as req_pic:
+                    status = req_pic.status
+                    if status != 200:
+                        raise ConnectionError
+                    content = await req_pic.read()
+                    with open(download_path + '{}.jpg'.format(pic_url_dict.get(download_url)), 'wb') as f:
+                        f.write(content)
+                        f.close()
+                    print('Finish download:{}'.format(pic_url_dict.get(download_url)))
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    tasks = [download(url) for url in pic_url_dict]
+    loop.run_until_complete(asyncio.wait(tasks))
 
 
 if __name__ == '__main__':
