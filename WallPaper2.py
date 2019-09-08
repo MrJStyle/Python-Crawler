@@ -23,7 +23,7 @@ definition = '1920x1080'
 header = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36'
 }
-download_path = '/Volumes/Samsung_T5/Files/Photo/test/'
+download_path = '/Volumes/Samsung_T5/Files/Photo/WallPapers/'
 
 
 def get_xpath(html):
@@ -109,6 +109,6 @@ def download_pic(start_page, end_page):
 
 
 if __name__ == '__main__':
-    download_pic(7, 8)
+    download_pic(15, 20)
 
 
