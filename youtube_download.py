@@ -25,16 +25,22 @@ class YoutubeDownload(object):
         html = etree.HTML(page_source)
         return html
 
-
     def get_label_list(self, xpath, html):
         return html.xpath(xpath)
 
     def download_m4a(self, path, url, index=140):
-        return os.system('youtube-dl --proxy {} -f {} {} -o {}'.format('localhost:1087', index, url, path))
+        return os.system('youtube-dl --proxy {} -f {} {} -o {}'.format('192.168.31.211:1087', index, url, path))
+
+    def scroll(self):
+        scroll_js = "document.documentElement.scrollTop=100000"
+        time.sleep(5)
+        self.browser.execute_script(scroll_js)
 
 
 if __name__ == '__main__':
-    youtube = YoutubeDownload('https://www.youtube.com/user/JFlaMusic/videos?view=0&sort=dd&shelf_id=11')
+    youtube = YoutubeDownload('https://www.youtube.com/channel/UCyvqwwpQYUHfQhm6g4UHRsQ/videos')
+    for _ in range(5):
+        youtube.scroll()
     logger.info('finish init')
     html = youtube.get_xpath_elements()
     xpath = "//a[@class='yt-simple-endpoint style-scope ytd-grid-video-renderer']"
@@ -43,8 +49,9 @@ if __name__ == '__main__':
     title_list = [i.xpath('@title')[0].replace('(', '').replace(')', '').replace(' ', '_') for i in a_label_list]
     bind_list = dict(zip(title_list, video_url_list))
     for index, title in enumerate(bind_list):
-        path = '/Volumes/Samsung_T5/Files/Music/JFla/{}'.format(title+'.m4a')
+        path = '/Volumes/Samsung_T5/Files/Music/Saesong/{}'.format(title+'.m4a')
         logger.info('start download {}'.format(title))
         youtube.download_m4a(path=path, url=bind_list.get(title))
         logger.info('finish download {} finish rate: {} / {}'.format(title, index+1, len(bind_list)))
     logger.info('finish download all')
+
