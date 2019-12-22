@@ -1,6 +1,8 @@
 import os
 import time
 import logging
+
+from concurrent.futures import ThreadPoolExecutor
 from selenium import webdriver
 from lxml import etree
 
@@ -25,10 +27,12 @@ class YoutubeDownload(object):
         html = etree.HTML(page_source)
         return html
 
-    def get_label_list(self, xpath, html):
+    @staticmethod
+    def get_label_list(xpath, html):
         return html.xpath(xpath)
 
-    def download_m4a(self, path, url, index=140):
+    @staticmethod
+    def download_m4a(path, url, index=140):
         return os.system('youtube-dl --proxy {} -f {} {} -o {}'.format('192.168.31.211:1087', index, url, path))
 
     def scroll(self):
@@ -38,7 +42,7 @@ class YoutubeDownload(object):
 
 
 if __name__ == '__main__':
-    youtube = YoutubeDownload('https://www.youtube.com/channel/UCyvqwwpQYUHfQhm6g4UHRsQ/videos')
+    youtube = YoutubeDownload('https://www.youtube.com/user/JFlaMusic/videos?view=0&sort=dd&shelf_id=588')
     for _ in range(5):
         youtube.scroll()
     logger.info('finish init')
@@ -48,10 +52,14 @@ if __name__ == '__main__':
     video_url_list = ["http://www.youtube.com"+i.xpath('@href')[0] for i in a_label_list]
     title_list = [i.xpath('@title')[0].replace('(', '').replace(')', '').replace(' ', '_') for i in a_label_list]
     bind_list = dict(zip(title_list, video_url_list))
-    for index, title in enumerate(bind_list):
-        path = '/Volumes/Samsung_T5/Files/Music/Saesong/{}'.format(title+'.m4a')
-        logger.info('start download {}'.format(title))
-        youtube.download_m4a(path=path, url=bind_list.get(title))
-        logger.info('finish download {} finish rate: {} / {}'.format(title, index+1, len(bind_list)))
+    with ThreadPoolExecutor(4) as executor:
+        for index, title in enumerate(bind_list):
+            path = '/Volumes/Samsung_T5/Files/Music/Jfla/{}'.format(title+'.m4a')
+            if os.path.exists(path):
+                continue
+            logger.info('start download {}'.format(title))
+            # youtube.download_m4a(path=path, url=bind_list.get(title))
+            executor.submit(youtube.download_m4a, path, bind_list.get(title))
+            logger.info('finish download {} finish rate: {} / {}'.format(title, index+1, len(bind_list)))
     logger.info('finish download all')
 
